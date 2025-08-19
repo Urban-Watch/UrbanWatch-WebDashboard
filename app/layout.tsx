@@ -1,27 +1,25 @@
+// app/layout.tsx
 import type React from "react"
 import type { Metadata } from "next"
-import { Montserrat } from "next/font/google"
-import { Open_Sans } from "next/font/google"
+import { Inter, Playfair_Display } from "next/font/google"
 import "./globals.css"
 
-const montserrat = Montserrat({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-montserrat",
-  weight: ["400", "600", "700", "900"],
+  variable: "--font-inter",
 })
 
-const openSans = Open_Sans({
+const playfairDisplay = Playfair_Display({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-open-sans",
-  weight: ["400", "500", "600"],
+  variable: "--font-playfair-display",
+  weight: ["400", "500", "600", "700", "800", "900"],
 })
 
 export const metadata: Metadata = {
   title: "UrbanWatch - Civic Issue Reporting Dashboard",
   description: "Professional civic management tool for tracking and resolving urban issues",
-  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -30,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${montserrat.variable} ${openSans.variable} antialiased`}>
+    <html lang="en" className={`${inter.variable} ${playfairDisplay.variable} antialiased`}>
       <body className="font-sans">{children}</body>
     </html>
   )
