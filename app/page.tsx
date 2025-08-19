@@ -128,7 +128,7 @@ export default function Dashboard() {
           <ClientMap issues={priorityIssues} />
           
           {/* Floating Total Active Reports */}
-          <div className="absolute bottom-6 right-0 z-[1000]">
+          <div className="absolute bottom-7 right-1 z-[1000]">
             <div className="bg-white rounded-lg border shadow-lg p-3 w-64">
               <div className="flex justify-between items-center mb-3">
                 <h3 className="font-semibold text-sm">
