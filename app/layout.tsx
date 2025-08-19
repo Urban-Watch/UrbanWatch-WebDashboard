@@ -1,4 +1,5 @@
 // app/layout.tsx
+import { Analytics } from "@vercel/analytics/next"
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
@@ -26,10 +27,12 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
+  // Add any other props here
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${playfairDisplay.variable} antialiased`}>
       <body className="font-sans">{children}</body>
+      <Analytics />
     </html>
   )
 }
