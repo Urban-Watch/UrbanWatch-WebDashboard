@@ -91,7 +91,7 @@ export function InteractiveMap({ issues }: { issues: any[] }) {
   const bounds = L.latLngBounds(issues.map((issue: any) => issue.coordinates));
 
   return (
-    <MapContainer bounds={bounds} className="w-full h-full" scrollWheelZoom={false}>
+    <MapContainer bounds={bounds} className="w-full h-full rounded-2xl" scrollWheelZoom={false}>
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
