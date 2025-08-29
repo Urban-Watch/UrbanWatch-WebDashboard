@@ -1,28 +1,15 @@
 // app/report/[id]/page.tsx
+"use client";
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { Header } from "@/components/header"
 import { ClientMap } from "@/components/client-map"
-
-// Mock data for individual reports
-const reportData: Record<string, any> = {
-  "1": {
-    id: 1,
-    title: "Trash Overflow Near School",
-    reportId: "#RP12345ABC256",
-    submissionDate: "19 August 2025",
-    submissionTime: "9:11 AM",
-    description: "",
-    criticalityScore: 82,
-    priority: "high",
-    status: "Unresolved",
-    location: "D130 RK hall of residence, IIT KGP, Kharagpur 721302",
-    coordinates: [22.3149, 87.3105], // IIT Kharagpur coordinates
-    aiAnalysis: "",
-  },
-}
+import { ImageSlideshow } from "@/components/image-slideshow"
+import { useReport, useUpdateReportStatus } from "@/hooks/use-api"
+import { useState, useEffect, useRef } from "react"
 
 interface ReportPageProps {
   params: {
@@ -31,8 +18,70 @@ interface ReportPageProps {
 }
 
 export default function ReportPage({ params }: ReportPageProps) {
-  const report = reportData[params.id]
+  const { data: report, loading, error } = useReport(params.id);
+  const { updateStatus, loading: updating, error: updateError } = useUpdateReportStatus();
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setStatusDropdownOpen(false);
+      }
+    };
+
+    if (statusDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [statusDropdownOpen]);
+  
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-6 py-8 text-center">
+          <h1 className="text-2xl font-bold mb-4 text-red-500">❌ Error Loading Report</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Link href="/">
+            <Button>Back to Dashboard</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-6 py-8">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-300 rounded mb-6 w-32"></div>
+            <div className="h-8 bg-gray-300 rounded mb-4 w-64"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="h-64 bg-gray-300 rounded"></div>
+                <div className="space-y-4">
+                  <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+                </div>
+              </div>
+              <div className="h-96 bg-gray-300 rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not found if no report
   if (!report) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -44,8 +93,25 @@ export default function ReportPage({ params }: ReportPageProps) {
           </Link>
         </div>
       </div>
-    )
+    );
   }
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    const success = await updateStatus(params.id, newStatus as any);
+    if (success) {
+      setStatusDropdownOpen(false);
+      // Optionally refresh the page or update local state
+      window.location.reload();
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Resolved': return 'bg-green-500 hover:bg-green-600';
+      case 'In Progress': return 'bg-yellow-500 hover:bg-yellow-600';
+      default: return 'bg-red-500 hover:bg-red-600';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -60,17 +126,48 @@ export default function ReportPage({ params }: ReportPageProps) {
         {/* Header with status */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold">Full Report</h1>
-            <p className="text-gray-500">Report details and AI summaries</p>
+            <h1 className="text-3xl font-bold playfair-display">Full Report</h1>
+            <p className="text-gray-500 font-inter">Report details and AI summaries</p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Current Status :</span>
-            <Badge 
-              variant="destructive" 
-              className="bg-red-500 hover:bg-red-600 text-white px-3 py-1"
-            >
-              {report.status} ▼
-            </Badge>
+          <div className="flex items-center gap-2 relative">
+            <span className="text-sm text-gray-600 font-inter">Current Status :</span>
+            {updateError && (
+              <div className="absolute top-8 right-0 bg-red-100 text-red-700 px-2 py-1 rounded text-xs">
+                {updateError}
+              </div>
+            )}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                disabled={updating}
+                className={`${getStatusColor(report.status || 'Unresolved')} text-white px-3 py-1 rounded cursor-pointer hover:opacity-90 transition-opacity ${updating ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {updating ? 'Updating...' : report.status} ▼
+              </button>
+              
+              {statusDropdownOpen && (
+                <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg z-50 min-w-32">
+                  <button
+                    onClick={() => handleStatusUpdate('waiting_for_attention')}
+                    className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                  >
+                    Unresolved
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate('got_the_attention')}
+                    className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                  >
+                    In Progress
+                  </button>
+                  <button
+                    onClick={() => handleStatusUpdate('resolved')}
+                    className="block w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                  >
+                    Resolved
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -78,56 +175,63 @@ export default function ReportPage({ params }: ReportPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left column */}
           <div className="space-y-6">
-            {/* Image placeholder */}
-            <div className="bg-gray-300 rounded-lg h-64 flex items-center justify-center">
-              <span className="text-gray-600 text-lg">Image</span>
-            </div>
+            {/* Image slideshow */}
+            <ImageSlideshow 
+              images={report.images || []} 
+              alt={report.title}
+            />
 
             {/* Report details */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold">{report.title}</h2>
+                <h2 className="text-xl font-bold playfair-display">{report.title}</h2>
                 <Badge 
-                  variant="destructive" 
-                  className="bg-red-500 text-white text-xs px-2 py-1"
+                  className={`text-white text-xs px-2 py-1 ${
+                    report.priority === 'high' ? 'bg-red-500' : 
+                    report.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}
                 >
-                  High Priority
+                  {report.priority === 'high' ? 'High Priority' : 
+                   report.priority === 'medium' ? 'Medium Priority' : 'Low Priority'}
                 </Badge>
               </div>
 
-              <div className="space-y-2 text-sm">
+              <div className="space-y-2 text-sm font-inter">
                 <div className="flex gap-4">
                   <span className="text-gray-600">Report ID :</span>
-                  <span className="text-gray-900">{report.reportId}</span>
+                  <span className="text-gray-900">{report.report_id || `#${report.id}`}</span>
                 </div>
                 <div className="flex gap-4">
                   <span className="text-gray-600">Submission Date :</span>
-                  <span className="text-gray-900">{report.submissionDate}</span>
+                  <span className="text-gray-900">{report.reportDate || 'N/A'}</span>
                 </div>
                 <div className="flex gap-4">
-                  <span className="text-gray-600">Submission Time :</span>
-                  <span className="text-gray-900">{report.submissionTime}</span>
+                  <span className="text-gray-600">Category :</span>
+                  <span className="text-gray-900 capitalize">{report.category || 'N/A'}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-bold text-sm">Description :</h3>
-                <div className="border border-gray-300 rounded p-3 min-h-20 bg-white">
-                  {/* Empty description box */}
+                <h3 className="font-bold text-sm playfair-display">Description :</h3>
+                <div className="border border-gray-300 rounded p-3 min-h-20 bg-white font-inter">
+                  {report.criticality || 'No description available'}
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="font-bold text-sm">Criticality Score:</span>
-                <Badge className="bg-red-500 text-white text-lg font-bold px-3 py-1">
-                  {report.criticalityScore}
+                <span className="font-bold text-sm playfair-display">Criticality Score:</span>
+                <Badge className={`text-white text-lg font-bold px-3 py-1 ${
+                  report.priority === 'high' ? 'bg-red-500' : 
+                  report.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                }`}>
+                  {report.score}
                 </Badge>
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-bold text-sm">AI Analysis :</h3>
-                <div className="border border-gray-300 rounded p-3 min-h-20 bg-white">
-                  {/* Empty AI analysis box */}
+                <h3 className="font-bold text-sm playfair-display">AI Analysis :</h3>
+                <div className="border border-gray-300 rounded p-3 min-h-20 bg-white font-inter">
+                  {report.ai_analysis || 'AI analysis not available'}
                 </div>
               </div>
             </div>
@@ -142,14 +246,14 @@ export default function ReportPage({ params }: ReportPageProps) {
                 location: report.location,
                 coordinates: report.coordinates,
                 priority: report.priority,
-                score: report.criticalityScore
+                score: report.score
               }]} />
             </div>
 
             {/* Location info */}
             <div className="space-y-2">
-              <h3 className="font-bold text-gray-700">Location :</h3>
-              <p className="text-gray-900 text-sm leading-relaxed">
+              <h3 className="font-bold text-gray-700 playfair-display">Location :</h3>
+              <p className="text-gray-900 text-sm leading-relaxed font-inter">
                 {report.location}
               </p>
             </div>
