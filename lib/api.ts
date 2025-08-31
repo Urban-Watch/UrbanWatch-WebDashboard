@@ -22,8 +22,15 @@ interface Report {
   };
   criticality_score: number;
   status: 'waiting_for_attention' | 'got_the_attention' | 'resolved';
+  admin_notes: string;
   created_at: string;
   updated_at: string;
+  severity_score: number;
+  severity_analysis: string;
+  impact_score: number;
+  impact_analysis: string;
+  population_estimate: number;
+  vehicle_estimate: number;
 }
 
 interface PriorityReport {
@@ -134,7 +141,9 @@ export const urbanWatchApi = {
 
   // Get single report by ID
   async getReportById(reportId: string): Promise<{ report: Report }> {
-    return apiCall(`/api/v1/admin/reports/${reportId}`);
+    const response = await apiCall<{ report: Report }>(`/api/v1/admin/reports/${reportId}`);
+    console.log('📄 Single Report Response:', response);
+    return response;
   },
 
   // Update report status

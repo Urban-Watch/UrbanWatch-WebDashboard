@@ -10,15 +10,17 @@ import { ClientMap } from "@/components/client-map"
 import { ImageSlideshow } from "@/components/image-slideshow"
 import { useReport, useUpdateReportStatus } from "@/hooks/use-api"
 import { useState, useEffect, useRef } from "react"
+import { use } from "react"
 
 interface ReportPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ReportPage({ params }: ReportPageProps) {
-  const { data: report, loading, error } = useReport(params.id);
+  const { id } = use(params);
+  const { data: report, loading, error } = useReport(id);
   const { updateStatus, loading: updating, error: updateError } = useUpdateReportStatus();
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -97,7 +99,7 @@ export default function ReportPage({ params }: ReportPageProps) {
   }
 
   const handleStatusUpdate = async (newStatus: string) => {
-    const success = await updateStatus(params.id, newStatus as any);
+    const success = await updateStatus(id, newStatus as any);
     if (success) {
       setStatusDropdownOpen(false);
       // Optionally refresh the page or update local state
@@ -209,6 +211,10 @@ export default function ReportPage({ params }: ReportPageProps) {
                   <span className="text-gray-600">Category :</span>
                   <span className="text-gray-900 capitalize">{report.category || 'N/A'}</span>
                 </div>
+                <div className="flex gap-4">
+                  <span className="text-gray-600">People Reported :</span>
+                  <span className="text-gray-900">{report.people_reported || 0}</span>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -218,22 +224,90 @@ export default function ReportPage({ params }: ReportPageProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <span className="font-bold text-sm playfair-display">Criticality Score:</span>
-                <Badge className={`text-white text-lg font-bold px-3 py-1 ${
-                  report.priority === 'high' ? 'bg-red-500' : 
-                  report.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                }`}>
-                  {report.score}
-                </Badge>
+              {/* New Severity Score Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm playfair-display">Severity Score:</span>
+                  <Badge className="bg-blue-500 text-white text-lg font-bold px-3 py-1">
+                    {report.severity_score || 'N/A'}
+                  </Badge>
+                </div>
+                {report.severity_analysis && (
+                  <div className="border border-gray-300 rounded p-3 bg-blue-50 font-inter text-sm">
+                    <span className="font-semibold text-blue-800">Severity Analysis: </span>
+                    {report.severity_analysis}
+                  </div>
+                )}
               </div>
 
+              {/* New Impact Score Section */}
               <div className="space-y-2">
-                <h3 className="font-bold text-sm playfair-display">AI Analysis :</h3>
-                <div className="border border-gray-300 rounded p-3 min-h-20 bg-white font-inter">
-                  {report.ai_analysis || 'AI analysis not available'}
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm playfair-display">Impact Score:</span>
+                  <Badge className="bg-purple-500 text-white text-lg font-bold px-3 py-1">
+                    {report.impact_score || 'N/A'}
+                  </Badge>
+                </div>
+                {report.impact_analysis && (
+                  <div className="border border-gray-300 rounded p-3 bg-purple-50 font-inter text-sm">
+                    <span className="font-semibold text-purple-800">Impact Analysis: </span>
+                    {report.impact_analysis}
+                  </div>
+                )}
+              </div>
+
+              {/* Population and Vehicle Estimates */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="font-bold text-sm playfair-display">Population Estimate:</span>
+                  <div className="bg-green-50 border border-green-200 rounded p-2 text-center">
+                    <span className="text-green-800 font-bold text-lg">{report.population_estimate || 'N/A'}</span>
+                    <p className="text-green-600 text-xs">residents</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="font-bold text-sm playfair-display">Vehicle Estimate:</span>
+                  <div className="bg-orange-50 border border-orange-200 rounded p-2 text-center">
+                    <span className="text-orange-800 font-bold text-lg">{report.vehicle_estimate || 'N/A'}</span>
+                    <p className="text-orange-600 text-xs">vehicles</p>
+                  </div>
                 </div>
               </div>
+
+              {/* Criticality Score Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm playfair-display">Criticality Score:</span>
+                  <Badge className={`text-white text-lg font-bold px-3 py-1 ${
+                    report.priority === 'high' ? 'bg-red-500' : 
+                    report.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`}>
+                    {report.score}
+                  </Badge>
+                </div>
+                {report.ai_analysis && (
+                  <div className={`border border-gray-300 rounded p-3 font-inter text-sm ${
+                    report.priority === 'high' ? 'bg-red-50' : 
+                    report.priority === 'medium' ? 'bg-yellow-50' : 'bg-green-50'
+                  }`}>
+                    <span className={`font-semibold ${
+                      report.priority === 'high' ? 'text-red-800' : 
+                      report.priority === 'medium' ? 'text-yellow-800' : 'text-green-800'
+                    }`}>Criticality Analysis: </span>
+                    {report.ai_analysis}
+                  </div>
+                )}
+              </div>
+
+              {/* Admin Notes Section */}
+              {report.admin_notes && (
+                <div className="space-y-2">
+                  <h3 className="font-bold text-sm playfair-display text-blue-600">Admin Notes :</h3>
+                  <div className="border border-blue-300 rounded p-3 min-h-20 bg-blue-50 font-inter">
+                    {report.admin_notes}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

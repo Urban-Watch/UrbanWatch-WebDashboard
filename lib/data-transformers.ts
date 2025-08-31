@@ -17,6 +17,14 @@ export interface FrontendIssue {
   images?: string[];
   people_reported?: number;
   report_id?: string;
+  // New fields from updated schema
+  severity_score?: number;
+  severity_analysis?: string;
+  impact_score?: number;
+  impact_analysis?: string;
+  population_estimate?: number;
+  vehicle_estimate?: number;
+  admin_notes?: string;
 }
 
 // Map criticality score to priority level
@@ -43,6 +51,14 @@ export function transformReportToIssue(report: Report): FrontendIssue {
     images: report.images,
     people_reported: report.people_reported,
     report_id: report.report_id,
+    // New fields from updated schema
+    severity_score: report.severity_score,
+    severity_analysis: report.severity_analysis,
+    impact_score: report.impact_score,
+    impact_analysis: report.impact_analysis,
+    population_estimate: report.population_estimate,
+    vehicle_estimate: report.vehicle_estimate,
+    admin_notes: report.admin_notes,
   };
 }
 
